@@ -10,6 +10,62 @@ import time
 import requests
 from typing import Dict, Any
 
+DEFAULT_PROMPT = """
+Create an absolutely insane, over-the-top, maximalist greeting card in the style of 'Russian grandmother WhatsApp cards' or 'Eastern European tacky greeting cards'.
+
+Your MAIN TASK: Carefully extract the main character from the provided photo (completely ignoring their background) and place them in the CENTER of this chaotic greeting card scene. The character must become an organic part of the scene, NOT just pasted in a frame. NO photo frames around the character! The effect should be eye-burning, humorous, and pushed to complete absurdity.
+
+Study the aesthetic of such cards: it's visual cacophony where incompatible elements collide in the most garish way possible.
+
+**MANDATORY STYLE REQUIREMENTS:**
+
+1. **Background:** NO simple backgrounds! Use screaming, clashing gradients (acid green with hot pink, neon purple with golden yellow) OR seamless patterns of roses, daisies, or other flowers. The background must be SATURATED and AGGRESSIVE.
+
+2. **Decorative Elements (ADD AS MANY AS POSSIBLE!):**
+   * **Flowers:** MUST include bouquets or branches of red roses with unnatural glossy shine and sparkle effects
+   * **Glitter and shine:** The ENTIRE image must be covered with glitter, sparkles, stars, and lens flare effects. Create the feeling that the card is glowing and shimmering from every angle
+   * **Luxury symbols (inappropriately placed):** Gold pocket watches, gift baskets with cognac and chocolates, scattered dollar bills, gold coins, champagne bottles, luxury cars in the background
+   * **Cute elements:** Doves, butterflies, cherubs/angels, hearts (all with excessive shine)
+   * **KITTENS AND PUPPIES (MANDATORY!):** Add adorable kittens and puppies with huge sparkling eyes, fluffy fur with glow effects. They should be scattered throughout the composition, looking overly cute and unrealistic
+   * **Religious symbols:** Crosses with golden glow, church domes, candles
+   * **Nature overkill:** Rainbows, sunbeams, falling petals, swans
+
+3. **Border:** NO frame around the character! Instead, add an ornate border around the ENTIRE card edges - elaborate floral patterns, golden baroque ornaments, or pearl strings.
+
+4. **Text (CRUCIAL ELEMENT):**
+   * **Font style:** Complex, handwritten, cursive, calligraphic fonts
+   * **Font decoration:** Text must be BRIGHT: gold, rainbow, or gradient. MANDATORY thick outer stroke (white or contrasting color) and heavy drop shadow. Text must look 3D, embossed, and shiny
+   * **LANGUAGE: ALL TEXT MUST BE IN RUSSIAN!**
+   * **Content:** Choose ONE phrase from this list OR create your own in similar style:
+     
+     - "Счастья, здоровья, всех благ!"
+     - "Благослови тебя Господь!"
+     - "Пусть ангел-хранитель всегда будет рядом!"
+     - "Мира и добра вашему дому!"
+     - "Доброго утра! Пусть день сложится удачно!"
+     - "Любви и тепла!"
+     - "Поздравляю от всей души!"
+     - "Пусть сбудутся все мечты!"
+     - "Здоровья крепкого и счастья!"
+     - "С Божьей помощью всё получится!"
+     - "Радости и благополучия!"
+     - "Пусть в душе всегда цветёт весна!"
+     
+   * Feel free to ADD MORE similar overly-sentimental phrases in Russian if it fits the composition!
+
+5. **Overall atmosphere:** MAXIMUM KITSCH. Combination of the incompatible. Complete visual overload. The goal is to create something SO tasteless that it becomes hilarious and endearing. Think: "My eyes are bleeding but I can't look away."
+
+**TECHNICAL DETAILS:**
+- Extremely high saturation
+- Multiple light sources creating chaos
+- Layering of transparent elements
+- Glossy, plastic-like finish on everything
+- Chromatic aberration and glow effects
+- More is MORE - if you think it's too much, add MORE
+
+Make it look like it was created by someone who just discovered Photoshop's every filter and effect and decided to use ALL of them at once.
+"""
+
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     method: str = event.get('httpMethod', 'GET')
@@ -63,7 +119,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     body_data = json.loads(event.get('body', '{}'))
     image_base64 = body_data.get('imageBase64')
     custom_prompt = body_data.get('prompt', 
-        'Transform this into a vintage-style greeting card with warm, nostalgic colors, soft glow effect, and decorative retro flourishes like a 1960s handmade postcard')
+        DEFAULT_PROMPT)
     
     print(f"Using prompt: {custom_prompt[:50]}...")
     print(f"Image provided: {bool(image_base64)}")

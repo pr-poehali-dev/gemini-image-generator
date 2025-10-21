@@ -223,8 +223,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     print(f"Got task ID: {task_id}, polling for result...")
     
-    max_attempts = 30
-    poll_interval = 2
+    max_attempts = 90
+    poll_interval = 4
     
     for attempt in range(max_attempts):
         time.sleep(poll_interval)

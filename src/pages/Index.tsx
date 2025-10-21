@@ -178,8 +178,22 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center py-8 px-4">
-      <div className="max-w-3xl w-full">
+    <>
+      <div className="bg-gradient-to-r from-[#FF8C42] to-[#FFA500] py-2 px-4 text-center">
+        <p className="text-sm font-medium text-white">
+          🚀 Создано за 2 часа на{' '}
+          <a 
+            href="https://poehali.dev" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="underline hover:text-gray-100 transition-colors"
+          >
+            poehali.dev
+          </a>
+        </p>
+      </div>
+      <div className="min-h-[calc(100vh-36px)] bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center py-8 px-4">
+        <div className="max-w-3xl w-full">
         <h1 className="text-5xl md:text-6xl font-handwritten font-bold text-center mb-6 text-[#FF1493] drop-shadow-lg animate-fade-in">
           Бабушкин Генератор Открыток
         </h1>
@@ -294,8 +308,9 @@ const Index = () => {
             Создавайте уникальные открытки с помощью искусственного интеллекта ✨
           </p>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

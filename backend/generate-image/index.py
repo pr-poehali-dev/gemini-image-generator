@@ -1,15 +1,13 @@
 '''
-Business: Generate AI-styled greeting cards using Google Gemini 2.5 Flash Image API
-Args: event with POST body containing imageBase64; context with request_id
-Returns: HTTP response with generated image in base64 format
+Business: Generate AI greeting cards using NanoBanana API
+Args: event with POST body containing prompt; context with request_id
+Returns: HTTP response with generated image URL
 '''
 
 import json
-import base64
 import os
+import requests
 from typing import Dict, Any
-from google import genai
-from google.genai import types
 
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
@@ -37,7 +35,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'Method not allowed'})
         }
     
-    api_key = os.environ.get('GEMINI_API_KEY')
+    api_key = os.environ.get('NANOBANANA_API_KEY')
     if not api_key:
         return {
             'statusCode': 500,
@@ -49,65 +47,42 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     body_data = json.loads(event.get('body', '{}'))
-    image_base64 = body_data.get('imageBase64')
+    custom_prompt = body_data.get('prompt', 
+        'A vintage-style greeting card with warm, nostalgic colors and soft glow effect')
     
-    if not image_base64:
+    headers = {
+        'Authorization': f'Bearer {api_key}',
+        'Content-Type': 'application/json'
+    }
+    
+    payload = {
+        'prompt': custom_prompt,
+        'numImages': 1,
+        'type': 'TEXTTOIAMGE',
+        'image_size': '1:1'
+    }
+    
+    response = requests.post(
+        'https://api.nanobananaapi.ai/api/v1/nanobanana/generate',
+        headers=headers,
+        json=payload,
+        timeout=60
+    )
+    
+    if response.status_code != 200:
         return {
-            'statusCode': 400,
+            'statusCode': response.status_code,
             'headers': {
                 'Content-Type': 'application/json',
                 'Access-Control-Allow-Origin': '*'
             },
-            'body': json.dumps({'error': 'Image is required'})
+            'body': json.dumps({
+                'error': 'Generation failed',
+                'details': response.text
+            })
         }
     
-    client = genai.Client(api_key=api_key)
-    
-    custom_prompt = """Transform this image into a vintage-style greeting card with warm, nostalgic colors. 
-Add a soft glow effect and make it look like a classic handmade postcard from the 1960s. 
-Keep the main subject but enhance it with artistic flourishes and decorative elements in a retro style."""
-    
-    contents = [
-        types.Content(
-            role="user",
-            parts=[
-                types.Part.from_text(text=custom_prompt),
-            ],
-        ),
-    ]
-    
-    generate_content_config = types.GenerateContentConfig(
-        response_modalities=["IMAGE", "TEXT"],
-    )
-    
-    generated_images = []
-    generated_text = ""
-    
-    for chunk in client.models.generate_content_stream(
-        model="gemini-2.5-flash-image",
-        contents=contents,
-        config=generate_content_config,
-    ):
-        if (
-            chunk.candidates is None
-            or chunk.candidates[0].content is None
-            or chunk.candidates[0].content.parts is None
-        ):
-            continue
-        
-        part = chunk.candidates[0].content.parts[0]
-        
-        if part.inline_data and part.inline_data.data:
-            inline_data = part.inline_data
-            image_data = base64.b64encode(inline_data.data).decode('utf-8')
-            mime_type = inline_data.mime_type
-            generated_images.append({
-                'data': f'data:{mime_type};base64,{image_data}',
-                'mimeType': mime_type
-            })
-        else:
-            if hasattr(chunk, 'text'):
-                generated_text += chunk.text
+    result = response.json()
     
     return {
         'statusCode': 200,
@@ -118,8 +93,7 @@ Keep the main subject but enhance it with artistic flourishes and decorative ele
         'isBase64Encoded': False,
         'body': json.dumps({
             'success': True,
-            'images': generated_images,
-            'text': generated_text,
+            'result': result,
             'requestId': context.request_id
         })
     }

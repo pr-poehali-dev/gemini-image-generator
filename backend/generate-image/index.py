@@ -2,6 +2,7 @@
 Business: Generate AI greeting cards using NanoBanana API
 Args: event with POST body containing prompt; context with request_id
 Returns: HTTP response with generated image URL
+Force redeploy fix
 '''
 
 import json

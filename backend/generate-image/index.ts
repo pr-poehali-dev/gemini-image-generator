@@ -60,7 +60,7 @@ module.exports.handler = async (event, context) => {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const customPrompt = `Transform this image into a vintage-style greeting card with warm, nostalgic colors. 
 Add a soft glow effect and make it look like a classic handmade postcard from the 1960s. 
@@ -75,21 +75,37 @@ Keep the main subject but enhance it with artistic flourishes and decorative ele
     },
   ];
 
-  const result = await model.generateContent([customPrompt, ...imageParts]);
-  const response = result.response;
-  const generatedText = response.text();
+  try {
+    const result = await model.generateContent([customPrompt, ...imageParts]);
+    const response = result.response;
+    const generatedText = response.text();
 
-  return {
-    statusCode: 200,
-    headers: {
-      "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-    },
-    isBase64Encoded: false,
-    body: JSON.stringify({
-      success: true,
-      result: generatedText,
-      requestId: context.requestId,
-    }),
-  };
+    return {
+      statusCode: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      isBase64Encoded: false,
+      body: JSON.stringify({
+        success: true,
+        result: generatedText,
+        requestId: context.requestId,
+      }),
+    };
+  } catch (error) {
+    return {
+      statusCode: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
+      isBase64Encoded: false,
+      body: JSON.stringify({
+        success: false,
+        error: error.message || "Generation failed",
+        requestId: context.requestId,
+      }),
+    };
+  }
 };

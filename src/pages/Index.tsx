@@ -75,14 +75,14 @@ const Index = () => {
 
       const data = await response.json();
       
-      if (data.success) {
-        setGeneratedImage(selectedImage);
+      if (data.success && data.imageUrl) {
+        setGeneratedImage(data.imageUrl);
         toast({
           title: 'Готово!',
-          description: 'Открытка сгенерирована через Gemini AI',
+          description: 'Открытка сгенерирована через NanoBanana AI',
         });
       } else {
-        throw new Error('Generation failed');
+        throw new Error(data.error || 'Generation failed');
       }
     } catch (error) {
       toast({

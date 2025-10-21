@@ -4,10 +4,11 @@ import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 import { useToast } from '@/hooks/use-toast';
 
+const BACKEND_URL = 'https://functions.poehali.dev/937cd074-b42c-4c14-86bc-4a8b85463284';
+
 const Index = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
-  const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -61,14 +62,37 @@ const Index = () => {
 
     setIsGenerating(true);
     
-    setTimeout(() => {
-      setGeneratedImage(selectedImage);
-      setIsGenerating(false);
-      toast({
-        title: 'Готово!',
-        description: 'Открытка сгенерирована',
+    try {
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageBase64: selectedImage,
+        }),
       });
-    }, 2000);
+
+      const data = await response.json();
+      
+      if (data.success) {
+        setGeneratedImage(selectedImage);
+        toast({
+          title: 'Готово!',
+          description: 'Открытка сгенерирована через Gemini AI',
+        });
+      } else {
+        throw new Error('Generation failed');
+      }
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось сгенерировать открытку. Проверьте API ключ.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleDownload = () => {
@@ -124,21 +148,6 @@ const Index = () => {
                 </p>
               </div>
             )}
-          </div>
-
-          <div className="mb-6">
-            <label className="block text-lg font-medium text-[#FF1493] mb-2">
-              Промпт для генерации (настраивается)
-            </label>
-            <Textarea
-              placeholder="Здесь будет промпт для стилизации изображения через Gemini API..."
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              className="min-h-[100px] text-base border-[#FFB6D9] focus:border-[#FF69B4] rounded-xl"
-            />
-            <p className="text-sm text-gray-500 mt-2">
-              💡 Промпт будет автоматически применяться к загруженному фото
-            </p>
           </div>
 
           <Button

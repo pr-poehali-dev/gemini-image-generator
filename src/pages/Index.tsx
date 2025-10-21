@@ -57,36 +57,53 @@ const Index = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 800 * 400) {
-        toast({
-          title: 'Файл слишком большой',
-          description: 'Максимальный размер 800x400px',
-          variant: 'destructive',
-        });
-        return;
-      }
+  const resizeImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-        setGeneratedImage(null);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          const maxWidth = 800;
+          const maxHeight = 800;
+          let width = img.width;
+          let height = img.height;
+          
+          if (width > maxWidth || height > maxHeight) {
+            const ratio = Math.min(maxWidth / width, maxHeight / height);
+            width = width * ratio;
+            height = height * ratio;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          ctx?.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.9));
+        };
+        img.src = e.target?.result as string;
       };
       reader.readAsDataURL(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const resized = await resizeImage(file);
+      setSelectedImage(resized);
+      setGeneratedImage(null);
     }
   };
 
-  const handleDrop = (e: React.DragEvent) => {
+  const handleDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setSelectedImage(e.target?.result as string);
-        setGeneratedImage(null);
-      };
-      reader.readAsDataURL(file);
+      const resized = await resizeImage(file);
+      setSelectedImage(resized);
+      setGeneratedImage(null);
     }
   };
 
@@ -209,7 +226,7 @@ const Index = () => {
                   Нажмите для загрузки или перетащите фото
                 </p>
                 <p className="text-sm text-gray-500">
-                  PNG, JPG, GIF (MAX. 800x400px)
+                  PNG, JPG, GIF (любого размера)
                 </p>
               </div>
             )}

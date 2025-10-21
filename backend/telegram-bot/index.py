@@ -4,6 +4,8 @@ import psycopg2
 from datetime import date, datetime
 from typing import Dict, Any, Optional
 import requests
+import time
+import threading
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -125,7 +127,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "Приходи завтра! 🌅"
                 )
             else:
-                send_message(bot_token, chat_id, "⏳ Генерирую открытку...")
+                funny_messages = [
+                    "⏳ Бабушка подбирает рамочку...",
+                    "🌸 Добавляем цветочки и блёстки...",
+                    "💐 Бабуля выбирает лучшие пожелания...",
+                    "✨ Украшаем открытку с любовью...",
+                    "🎨 Наносим бабушкин шарм...",
+                    "💝 Добавляем теплоты и уюта..."
+                ]
+                
+                status_msg = send_message_return(bot_token, chat_id, funny_messages[0])
+                message_id = status_msg.get('result', {}).get('message_id') if status_msg else None
                 
                 photo = message['photo'][-1]
                 file_id = photo['file_id']
@@ -141,11 +153,25 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     import base64
                     image_base64 = base64.b64encode(image_response.content).decode('utf-8')
                     
+                    msg_index = 0
+                    start_time = time.time()
+                    
                     generation_response = requests.post(
                         'https://d5dt42a8m2fk8h6dgdj7.apigw.yandexcloud.net/generate-card',
                         json={'imageBase64': f"data:image/jpeg;base64,{image_base64}"},
-                        headers={'Content-Type': 'application/json'}
+                        headers={'Content-Type': 'application/json'},
+                        timeout=60
                     )
+                    
+                    while time.time() - start_time < 30:
+                        if msg_index < len(funny_messages) - 1:
+                            msg_index += 1
+                            if message_id:
+                                edit_message(bot_token, chat_id, message_id, funny_messages[msg_index])
+                        time.sleep(3)
+                        
+                        if generation_response.status_code in [200, 201]:
+                            break
                     
                     gen_data = generation_response.json()
                     
@@ -156,12 +182,21 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                         )
                         conn.commit()
                         
+                        if message_id:
+                            delete_message(bot_token, chat_id, message_id)
+                        
                         send_photo(bot_token, chat_id, gen_data['imageUrl'], 
                             f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
                     else:
-                        send_message(bot_token, chat_id, "❌ Ошибка генерации. Попробуй еще раз.")
+                        if message_id:
+                            edit_message(bot_token, chat_id, message_id, "❌ Ошибка генерации. Попробуй еще раз.")
+                        else:
+                            send_message(bot_token, chat_id, "❌ Ошибка генерации. Попробуй еще раз.")
                 else:
-                    send_message(bot_token, chat_id, "❌ Не удалось получить фото.")
+                    if message_id:
+                        edit_message(bot_token, chat_id, message_id, "❌ Не удалось получить фото.")
+                    else:
+                        send_message(bot_token, chat_id, "❌ Не удалось получить фото.")
         
     finally:
         cur.close()
@@ -178,6 +213,25 @@ def send_message(token: str, chat_id: int, text: str):
     requests.post(
         f"https://api.telegram.org/bot{token}/sendMessage",
         json={'chat_id': chat_id, 'text': text}
+    )
+
+def send_message_return(token: str, chat_id: int, text: str):
+    response = requests.post(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        json={'chat_id': chat_id, 'text': text}
+    )
+    return response.json()
+
+def edit_message(token: str, chat_id: int, message_id: int, text: str):
+    requests.post(
+        f"https://api.telegram.org/bot{token}/editMessageText",
+        json={'chat_id': chat_id, 'message_id': message_id, 'text': text}
+    )
+
+def delete_message(token: str, chat_id: int, message_id: int):
+    requests.post(
+        f"https://api.telegram.org/bot{token}/deleteMessage",
+        json={'chat_id': chat_id, 'message_id': message_id}
     )
 
 def send_photo(token: str, chat_id: int, photo_url: str, caption: str):

@@ -1,3 +1,9 @@
+/**
+ * Business: Generate AI-styled images using Google Gemini API
+ * Args: event with POST body containing imageBase64; context with requestId
+ * Returns: HTTP response with generated image data
+ */
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 module.exports.handler = async (event, context) => {

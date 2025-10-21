@@ -2,9 +2,9 @@ import json
 import os
 import psycopg2
 from datetime import date, datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 import requests
-import time
+import base64
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -12,11 +12,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Args: event - dict with httpMethod, body; context - object with request_id
     Returns: HTTP response with statusCode, headers, body
     '''
-    print(f"=== HANDLER START ===")
-    print(f"Event: {json.dumps(event, ensure_ascii=False)[:500]}")
-    
-    method: str = event.get('httpMethod', 'POST')
-    print(f"Method: {method}")
+    method = event.get('httpMethod', 'POST')
     
     if method == 'OPTIONS':
         return {
@@ -27,15 +23,16 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Headers': 'Content-Type',
                 'Access-Control-Max-Age': '86400'
             },
-            'body': ''
+            'body': '',
+            'isBase64Encoded': False
         }
     
     if method != 'POST':
         return {
             'statusCode': 405,
             'headers': {'Content-Type': 'application/json'},
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Method not allowed'})
+            'body': json.dumps({'error': 'Method not allowed'}),
+            'isBase64Encoded': False
         }
     
     bot_token = os.environ.get('TELEGRAM_BOT_TOKEN')
@@ -45,18 +42,26 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 500,
             'headers': {'Content-Type': 'application/json'},
-            'isBase64Encoded': False,
-            'body': json.dumps({'error': 'Missing configuration'})
+            'body': json.dumps({'error': 'Missing configuration'}),
+            'isBase64Encoded': False
         }
     
-    body_data = json.loads(event.get('body', '{}'))
+    try:
+        body_data = json.loads(event.get('body', '{}'))
+    except:
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'ok': True}),
+            'isBase64Encoded': False
+        }
     
     if not body_data.get('message'):
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json'},
-            'isBase64Encoded': False,
-            'body': json.dumps({'ok': True})
+            'body': json.dumps({'ok': True}),
+            'isBase64Encoded': False
         }
     
     message = body_data['message']
@@ -65,20 +70,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         return {
             'statusCode': 200,
             'headers': {'Content-Type': 'application/json'},
-            'isBase64Encoded': False,
-            'body': json.dumps({'ok': True})
+            'body': json.dumps({'ok': True}),
+            'isBase64Encoded': False
         }
     
     chat_id = message['chat']['id']
     telegram_id = message['from']['id']
     username = message['from'].get('username')
-    first_name = message['from'].get('first_name', '')
+    first_name = message['from'].get('first_name', 'друг')
     last_name = message['from'].get('last_name', '')
     
-    conn = psycopg2.connect(db_url)
-    cur = conn.cursor()
+    conn = None
+    cur = None
     
     try:
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+        
         cur.execute(
             "SELECT id, generation_count, last_generation_date FROM users WHERE telegram_id = %s",
             (telegram_id,)
@@ -87,8 +95,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         
         if not user:
             cur.execute(
-                "INSERT INTO users (telegram_id, username, first_name, last_name) VALUES (%s, %s, %s, %s) RETURNING id, generation_count, last_generation_date",
-                (telegram_id, username, first_name, last_name)
+                "INSERT INTO users (telegram_id, username, first_name, last_name, generation_count, last_generation_date) VALUES (%s, %s, %s, %s, 0, %s) RETURNING id, generation_count, last_generation_date",
+                (telegram_id, username, first_name, last_name, date.today())
             )
             user = cur.fetchone()
             conn.commit()
@@ -130,17 +138,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "Приходи завтра! 🌅"
                 )
             else:
-                funny_messages = [
-                    "⏳ Бабушка подбирает рамочку...",
-                    "🌸 Добавляем цветочки и блёстки...",
-                    "💐 Бабуля выбирает лучшие пожелания...",
-                    "✨ Украшаем открытку с любовью...",
-                    "🎨 Наносим бабушкин шарм...",
-                    "💝 Добавляем теплоты и уюта..."
-                ]
-                
-                status_msg = send_message_return(bot_token, chat_id, funny_messages[0])
-                message_id = status_msg.get('result', {}).get('message_id') if status_msg else None
+                send_message(bot_token, chat_id, "⏳ Генерирую открытку...")
                 
                 photo = message['photo'][-1]
                 file_id = photo['file_id']
@@ -153,7 +151,6 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     file_url = f"https://api.telegram.org/file/bot{bot_token}/{file_path}"
                     
                     image_response = requests.get(file_url)
-                    import base64
                     image_base64 = base64.b64encode(image_response.content).decode('utf-8')
                     
                     try:
@@ -173,76 +170,55 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             )
                             conn.commit()
                             
-                            if message_id:
-                                delete_message(bot_token, chat_id, message_id)
-                            
                             send_photo(bot_token, chat_id, gen_data['imageUrl'], 
                                 f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
                         else:
-                            if message_id:
-                                edit_message(bot_token, chat_id, message_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
-                            else:
-                                send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
+                            send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
                     
                     except requests.exceptions.Timeout:
-                        if message_id:
-                            edit_message(bot_token, chat_id, message_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
-                        else:
-                            send_message(bot_token, chat_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
-                    
+                        send_message(bot_token, chat_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
                     except Exception as e:
-                        if message_id:
-                            edit_message(bot_token, chat_id, message_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
-                        else:
-                            send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
+                        print(f"Generation error: {e}")
+                        send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
                 else:
-                    if message_id:
-                        edit_message(bot_token, chat_id, message_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
-                    else:
-                        send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
-        
+                    send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
+    
     except Exception as e:
-        print(f"Error in handler: {str(e)}")
+        print(f"Handler error: {e}")
         import traceback
         traceback.print_exc()
+    
     finally:
-        cur.close()
-        conn.close()
+        if cur:
+            cur.close()
+        if conn:
+            conn.close()
     
     return {
         'statusCode': 200,
         'headers': {'Content-Type': 'application/json'},
-        'isBase64Encoded': False,
-        'body': json.dumps({'ok': True})
+        'body': json.dumps({'ok': True}),
+        'isBase64Encoded': False
     }
 
+
 def send_message(token: str, chat_id: int, text: str):
-    requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        json={'chat_id': chat_id, 'text': text}
-    )
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={'chat_id': chat_id, 'text': text},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Send message error: {e}")
 
-def send_message_return(token: str, chat_id: int, text: str):
-    response = requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        json={'chat_id': chat_id, 'text': text}
-    )
-    return response.json()
-
-def edit_message(token: str, chat_id: int, message_id: int, text: str):
-    requests.post(
-        f"https://api.telegram.org/bot{token}/editMessageText",
-        json={'chat_id': chat_id, 'message_id': message_id, 'text': text}
-    )
-
-def delete_message(token: str, chat_id: int, message_id: int):
-    requests.post(
-        f"https://api.telegram.org/bot{token}/deleteMessage",
-        json={'chat_id': chat_id, 'message_id': message_id}
-    )
 
 def send_photo(token: str, chat_id: int, photo_url: str, caption: str):
-    requests.post(
-        f"https://api.telegram.org/bot{token}/sendPhoto",
-        json={'chat_id': chat_id, 'photo': photo_url, 'caption': caption}
-    )
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/sendPhoto",
+            json={'chat_id': chat_id, 'photo': photo_url, 'caption': caption},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Send photo error: {e}")

@@ -160,17 +160,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center py-8 px-4">
-      <div className="max-w-4xl w-full">
-        <h1 className="text-5xl md:text-6xl font-bubblegum text-center mb-8 text-[#FF1493] drop-shadow-lg animate-fade-in">
+      <div className="max-w-3xl w-full">
+        <h1 className="text-4xl md:text-5xl font-bubblegum text-center mb-6 text-[#FF1493] drop-shadow-lg animate-fade-in">
           Бабушкин Генератор Открыток
         </h1>
 
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl animate-scale-in">
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl animate-scale-in">
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onClick={() => fileInputRef.current?.click()}
-            className="border-4 border-dashed border-[#FFB6D9] rounded-2xl mb-6 cursor-pointer hover:border-[#FF69B4] hover:bg-[#FFFSFF]/50 transition-all duration-300 aspect-square flex flex-col items-center justify-center p-8"
+            className="border-4 border-dashed border-[#FFB6D9] rounded-2xl mb-6 cursor-pointer hover:border-[#FF69B4] hover:bg-[#FFFSFF]/50 transition-all duration-300 h-[400px] flex flex-col items-center justify-center p-6"
           >
             <input
               ref={fileInputRef}

@@ -1,8 +1,0 @@
-{
-  "name": "generate-image",
-  "version": "1.0.0",
-  "dependencies": {
-    "@google/generative-ai": "^0.21.0",
-    "https-proxy-agent": "^7.0.5"
-  }
-}

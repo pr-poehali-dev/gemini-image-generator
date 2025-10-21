@@ -127,7 +127,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "Приходи завтра! 🌅"
                 )
             else:
-                send_message(bot_token, chat_id, "⏳ Генерирую открытку...")
+                funny_messages = [
+                    "⏳ Бабушка подбирает рамочку...",
+                    "🌸 Добавляем цветочки и блёстки...",
+                    "💐 Бабуля выбирает лучшие пожелания...",
+                    "✨ Украшаем открытку с любовью...",
+                    "🎨 Наносим бабушкин шарм...",
+                    "💝 Добавляем теплоты и уюта..."
+                ]
+                
+                status_msg = send_message_return(bot_token, chat_id, funny_messages[0])
+                message_id = status_msg.get('result', {}).get('message_id') if status_msg else None
                 
                 photo = message['photo'][-1]
                 file_id = photo['file_id']
@@ -144,32 +154,69 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     image_base64 = base64.b64encode(image_response.content).decode('utf-8')
                     
                     try:
-                        generation_response = requests.post(
-                            'https://d5dt42a8m2fk8h6dgdj7.apigw.yandexcloud.net/generate-card',
-                            json={'imageBase64': f"data:image/jpeg;base64,{image_base64}"},
-                            headers={'Content-Type': 'application/json'},
-                            timeout=60
-                        )
+                        from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
                         
-                        gen_data = generation_response.json()
-                        
-                        if gen_data.get('success') and gen_data.get('imageUrl'):
-                            cur.execute(
-                                "UPDATE users SET generation_count = generation_count + 1, last_generation_date = %s, updated_at = %s WHERE id = %s",
-                                (today, datetime.now(), user_id)
+                        def generate_image():
+                            return requests.post(
+                                'https://d5dt42a8m2fk8h6dgdj7.apigw.yandexcloud.net/generate-card',
+                                json={'imageBase64': f"data:image/jpeg;base64,{image_base64}"},
+                                headers={'Content-Type': 'application/json'},
+                                timeout=60
                             )
-                            conn.commit()
+                        
+                        with ThreadPoolExecutor() as executor:
+                            future = executor.submit(generate_image)
+                            msg_index = 0
+                            start_time = time.time()
                             
-                            send_photo(bot_token, chat_id, gen_data['imageUrl'], 
-                                f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
+                            while time.time() - start_time < 60:
+                                if future.done():
+                                    break
+                                
+                                if msg_index < len(funny_messages) - 1 and time.time() - start_time > (msg_index + 1) * 3:
+                                    msg_index += 1
+                                    if message_id:
+                                        edit_message(bot_token, chat_id, message_id, funny_messages[msg_index])
+                                
+                                time.sleep(0.5)
+                            
+                            try:
+                                generation_response = future.result(timeout=1)
+                                gen_data = generation_response.json()
+                                
+                                if gen_data.get('success') and gen_data.get('imageUrl'):
+                                    cur.execute(
+                                        "UPDATE users SET generation_count = generation_count + 1, last_generation_date = %s, updated_at = %s WHERE id = %s",
+                                        (today, datetime.now(), user_id)
+                                    )
+                                    conn.commit()
+                                    
+                                    if message_id:
+                                        delete_message(bot_token, chat_id, message_id)
+                                    
+                                    send_photo(bot_token, chat_id, gen_data['imageUrl'], 
+                                        f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
+                                else:
+                                    if message_id:
+                                        edit_message(bot_token, chat_id, message_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
+                                    else:
+                                        send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
+                            except FutureTimeoutError:
+                                if message_id:
+                                    edit_message(bot_token, chat_id, message_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
+                                else:
+                                    send_message(bot_token, chat_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
+                    
+                    except Exception as e:
+                        if message_id:
+                            edit_message(bot_token, chat_id, message_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
                         else:
                             send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
-                    except requests.exceptions.Timeout:
-                        send_message(bot_token, chat_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
-                    except Exception:
-                        send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
                 else:
-                    send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
+                    if message_id:
+                        edit_message(bot_token, chat_id, message_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
+                    else:
+                        send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
         
     finally:
         cur.close()

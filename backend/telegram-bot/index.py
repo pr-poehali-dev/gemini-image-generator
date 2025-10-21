@@ -149,6 +149,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "💝 Добавляем теплоты и уюта..."
                 ]
                 
+                custom_text = message.get('caption', '').strip()
+                
                 status_msg = send_message_with_response(bot_token, chat_id, funny_messages[0])
                 message_id = status_msg.get('result', {}).get('message_id') if status_msg else None
                 
@@ -169,9 +171,13 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     
                     def generate():
                         try:
+                            payload = {'imageBase64': f"data:image/jpeg;base64,{image_base64}"}
+                            if custom_text:
+                                payload['customText'] = custom_text
+                            
                             resp = requests.post(
                                 'https://functions.poehali.dev/937cd074-b42c-4c14-86bc-4a8b85463284',
-                                json={'imageBase64': f"data:image/jpeg;base64,{image_base64}"},
+                                json=payload,
                                 headers={'Content-Type': 'application/json'},
                                 timeout=60
                             )

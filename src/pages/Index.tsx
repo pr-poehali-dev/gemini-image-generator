@@ -16,6 +16,7 @@ const Index = () => {
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationsLeft, setGenerationsLeft] = useState(3);
+  const [customText, setCustomText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -140,6 +141,7 @@ const Index = () => {
         },
         body: JSON.stringify({
           imageBase64: selectedImage,
+          customText: customText.trim() || undefined,
         }),
       });
 
@@ -233,6 +235,22 @@ const Index = () => {
           </div>
 
           <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-[#FF1493] mb-2">
+                Пожелание (необязательно)
+              </label>
+              <Textarea
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+                placeholder="Например: С Днём Рождения! Счастья, здоровья, всех благ!"
+                className="resize-none border-[#FFB6D9] focus:border-[#FF69B4] min-h-[80px]"
+                maxLength={200}
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                {customText.length} / 200 символов
+              </p>
+            </div>
+
             <div className="text-center">
               <p className="text-lg font-bold text-[#FF1493]">
                 Осталось генераций сегодня: {generationsLeft} / 3

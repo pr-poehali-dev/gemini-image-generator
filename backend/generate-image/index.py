@@ -118,10 +118,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     body_data = json.loads(event.get('body', '{}'))
     image_base64 = body_data.get('imageBase64')
-    custom_prompt = body_data.get('prompt', 
-        DEFAULT_PROMPT)
+    custom_text = body_data.get('customText', '')
     
-    print(f"Using prompt: {custom_prompt[:50]}...")
+    custom_prompt = DEFAULT_PROMPT
+    if custom_text:
+        custom_prompt = custom_prompt.replace(
+            '- "Счастья, здоровья, всех благ!"',
+            f'- "{custom_text}"'
+        )
+        custom_prompt += f'\n\nIMPORTANT: The main text on the card MUST be: "{custom_text}"'
+    
+    print(f"Using custom text: {custom_text}")
     print(f"Image provided: {bool(image_base64)}")
     
     image_url = None

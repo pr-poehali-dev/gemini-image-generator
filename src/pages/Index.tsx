@@ -182,7 +182,7 @@ const Index = () => {
       <div className="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#E6A700] via-[#FFB800] to-[#E6A700] py-2.5 px-4 text-center relative overflow-hidden z-50">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
         <p className="text-sm font-medium text-black relative z-10">
-          <Icon name="Rocket" size={16} className="inline-block mr-1" /> Создано за 2 часа на{' '}
+          <Icon name="Rocket" size={16} className="inline-block mr-1" /> Генератор создан за 30 минут на{' '}
           <a 
             href="https://poehali.dev" 
             target="_blank" 

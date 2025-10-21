@@ -15,7 +15,7 @@ const Index = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generationsLeft, setGenerationsLeft] = useState(3);
+  const [generationsLeft, setGenerationsLeft] = useState(1);
   const [customText, setCustomText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -27,10 +27,10 @@ const Index = () => {
       const today = new Date().toDateString();
       
       if (parsed.date === today) {
-        setGenerationsLeft(Math.max(0, 3 - parsed.count));
+        setGenerationsLeft(Math.max(0, 1 - parsed.count));
       } else {
         localStorage.setItem('generationData', JSON.stringify({ count: 0, date: today }));
-        setGenerationsLeft(3);
+        setGenerationsLeft(1);
       }
     } else {
       const today = new Date().toDateString();
@@ -47,14 +47,14 @@ const Index = () => {
       if (parsed.date === today) {
         const newCount = parsed.count + 1;
         localStorage.setItem('generationData', JSON.stringify({ count: newCount, date: today }));
-        setGenerationsLeft(Math.max(0, 3 - newCount));
+        setGenerationsLeft(Math.max(0, 1 - newCount));
       } else {
         localStorage.setItem('generationData', JSON.stringify({ count: 1, date: today }));
-        setGenerationsLeft(2);
+        setGenerationsLeft(0);
       }
     } else {
       localStorage.setItem('generationData', JSON.stringify({ count: 1, date: today }));
-      setGenerationsLeft(2);
+      setGenerationsLeft(0);
     }
   };
 
@@ -123,11 +123,6 @@ const Index = () => {
     }
 
     if (generationsLeft <= 0) {
-      toast({
-        title: 'Лимит исчерпан',
-        description: 'Вы использовали все 3 генерации на сегодня',
-        variant: 'destructive',
-      });
       return;
     }
 
@@ -294,27 +289,43 @@ const Index = () => {
 
             <div className="text-center">
               <p className="text-sm font-bold text-[#FF1493]">
-                Осталось генераций сегодня: {generationsLeft} / 3
+                Осталось генераций сегодня: {generationsLeft} / 1
               </p>
             </div>
             
-            <Button
-              onClick={handleGenerate}
-              disabled={!selectedImage || isGenerating || generationsLeft <= 0}
-              className="w-full bg-gradient-to-r from-[#FF69B4] to-[#FF1493] hover:from-[#FF1493] hover:to-[#FF69B4] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <>
-                  <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
-                  Генерируем открытку...
-                </>
-              ) : (
-                <>
-                  <Icon name="Sparkles" className="mr-2 h-5 w-5" />
-                  Создать открытку
-                </>
-              )}
-            </Button>
+            {generationsLeft <= 0 ? (
+              <a
+                href="https://t.me/vibecode_otkritki_bot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full block"
+              >
+                <Button
+                  className="w-full bg-gradient-to-r from-[#0088cc] to-[#006699] hover:from-[#006699] hover:to-[#0088cc] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Icon name="MessageCircle" className="mr-2 h-5 w-5" />
+                  Продолжить в Телеграм
+                </Button>
+              </a>
+            ) : (
+              <Button
+                onClick={handleGenerate}
+                disabled={!selectedImage || isGenerating}
+                className="w-full bg-gradient-to-r from-[#FF69B4] to-[#FF1493] hover:from-[#FF1493] hover:to-[#FF69B4] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
+                    Генерируем открытку...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Sparkles" className="mr-2 h-5 w-5" />
+                    Создать открытку
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {generatedImage && (

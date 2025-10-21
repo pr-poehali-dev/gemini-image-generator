@@ -5,6 +5,8 @@ from datetime import date, datetime
 from typing import Dict, Any
 import requests
 import base64
+import time
+import threading
 
 def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     '''
@@ -138,31 +140,76 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     "Приходи завтра! 🌅"
                 )
             else:
-                send_message(bot_token, chat_id, "⏳ Генерирую открытку...")
+                funny_messages = [
+                    "⏳ Бабушка подбирает рамочку...",
+                    "🌸 Добавляем цветочки и блёстки...",
+                    "💐 Бабуля выбирает лучшие пожелания...",
+                    "✨ Украшаем открытку с любовью...",
+                    "🎨 Наносим бабушкин шарм...",
+                    "💝 Добавляем теплоты и уюта..."
+                ]
+                
+                status_msg = send_message_with_response(bot_token, chat_id, funny_messages[0])
+                message_id = status_msg.get('result', {}).get('message_id') if status_msg else None
                 
                 photo = message['photo'][-1]
                 file_id = photo['file_id']
                 
-                file_response = requests.get(f"https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}")
+                file_response = requests.get(f"https://api.telegram.org/bot{bot_token}/getFile?file_id={file_id}", timeout=10)
                 file_data = file_response.json()
                 
                 if file_data.get('ok'):
                     file_path = file_data['result']['file_path']
                     file_url = f"https://api.telegram.org/file/bot{bot_token}/{file_path}"
                     
-                    image_response = requests.get(file_url)
+                    image_response = requests.get(file_url, timeout=30)
                     image_base64 = base64.b64encode(image_response.content).decode('utf-8')
                     
-                    try:
-                        generation_response = requests.post(
-                            'https://d5dt42a8m2fk8h6dgdj7.apigw.yandexcloud.net/generate-card',
-                            json={'imageBase64': f"data:image/jpeg;base64,{image_base64}"},
-                            headers={'Content-Type': 'application/json'},
-                            timeout=60
-                        )
+                    generation_done = {'value': False, 'data': None, 'error': None}
+                    
+                    def generate():
+                        try:
+                            resp = requests.post(
+                                'https://functions.poehali.dev/937cd074-b42c-4c14-86bc-4a8b85463284',
+                                json={'imageBase64': f"data:image/jpeg;base64,{image_base64}"},
+                                headers={'Content-Type': 'application/json'},
+                                timeout=60
+                            )
+                            generation_done['data'] = resp.json()
+                            generation_done['value'] = True
+                        except Exception as e:
+                            generation_done['error'] = str(e)
+                            generation_done['value'] = True
+                    
+                    gen_thread = threading.Thread(target=generate)
+                    gen_thread.start()
+                    
+                    start_time = time.time()
+                    msg_index = 0
+                    max_duration = 60
+                    
+                    while time.time() - start_time < max_duration:
+                        if generation_done['value']:
+                            break
                         
-                        gen_data = generation_response.json()
+                        elapsed = time.time() - start_time
+                        if elapsed > (msg_index + 1) * 3 and msg_index < len(funny_messages) - 1:
+                            msg_index += 1
+                            if message_id:
+                                edit_message(bot_token, chat_id, message_id, funny_messages[msg_index])
                         
+                        time.sleep(0.5)
+                    
+                    gen_thread.join(timeout=1)
+                    
+                    if generation_done.get('error'):
+                        error_msg = "❌ Не удалось создать открытку. Попробуйте еще раз!"
+                        if message_id:
+                            edit_message(bot_token, chat_id, message_id, error_msg)
+                        else:
+                            send_message(bot_token, chat_id, error_msg)
+                    elif generation_done.get('data'):
+                        gen_data = generation_done['data']
                         if gen_data.get('success') and gen_data.get('imageUrl'):
                             cur.execute(
                                 "UPDATE users SET generation_count = generation_count + 1, last_generation_date = %s, updated_at = %s WHERE id = %s",
@@ -170,16 +217,23 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                             )
                             conn.commit()
                             
+                            if message_id:
+                                delete_message(bot_token, chat_id, message_id)
+                            
                             send_photo(bot_token, chat_id, gen_data['imageUrl'], 
                                 f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
                         else:
-                            send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
-                    
-                    except requests.exceptions.Timeout:
-                        send_message(bot_token, chat_id, "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!")
-                    except Exception as e:
-                        print(f"Generation error: {e}")
-                        send_message(bot_token, chat_id, "❌ Не удалось создать открытку. Попробуйте еще раз!")
+                            error_msg = "❌ Не удалось создать открытку. Попробуйте еще раз!"
+                            if message_id:
+                                edit_message(bot_token, chat_id, message_id, error_msg)
+                            else:
+                                send_message(bot_token, chat_id, error_msg)
+                    else:
+                        timeout_msg = "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!"
+                        if message_id:
+                            edit_message(bot_token, chat_id, message_id, timeout_msg)
+                        else:
+                            send_message(bot_token, chat_id, timeout_msg)
                 else:
                     send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
     
@@ -211,6 +265,41 @@ def send_message(token: str, chat_id: int, text: str):
         )
     except Exception as e:
         print(f"Send message error: {e}")
+
+
+def send_message_with_response(token: str, chat_id: int, text: str):
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={'chat_id': chat_id, 'text': text},
+            timeout=10
+        )
+        return response.json()
+    except Exception as e:
+        print(f"Send message error: {e}")
+        return None
+
+
+def edit_message(token: str, chat_id: int, message_id: int, text: str):
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/editMessageText",
+            json={'chat_id': chat_id, 'message_id': message_id, 'text': text},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Edit message error: {e}")
+
+
+def delete_message(token: str, chat_id: int, message_id: int):
+    try:
+        requests.post(
+            f"https://api.telegram.org/bot{token}/deleteMessage",
+            json={'chat_id': chat_id, 'message_id': message_id},
+            timeout=10
+        )
+    except Exception as e:
+        print(f"Delete message error: {e}")
 
 
 def send_photo(token: str, chat_id: int, photo_url: str, caption: str):

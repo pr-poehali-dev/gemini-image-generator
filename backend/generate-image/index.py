@@ -36,6 +36,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     api_key = os.environ.get('NANOBANANA_API_KEY')
+    print(f"API key present: {bool(api_key)}")
+    
     if not api_key:
         return {
             'statusCode': 500,
@@ -50,6 +52,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     custom_prompt = body_data.get('prompt', 
         'A vintage-style greeting card with warm, nostalgic colors and soft glow effect')
     
+    print(f"Using prompt: {custom_prompt[:50]}...")
+    
     headers = {
         'Authorization': f'Bearer {api_key}',
         'Content-Type': 'application/json'
@@ -62,12 +66,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'image_size': '1:1'
     }
     
+    print(f"Sending request to NanoBanana API...")
+    
     response = requests.post(
         'https://api.nanobananaapi.ai/api/v1/nanobanana/generate',
         headers=headers,
         json=payload,
         timeout=60
     )
+    
+    print(f"Response status: {response.status_code}")
+    print(f"Response body: {response.text[:500]}")
     
     if response.status_code != 200:
         return {
@@ -83,6 +92,7 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     result = response.json()
+    print(f"Parsed result: {json.dumps(result)[:500]}")
     
     if result.get('code') != 200:
         return {

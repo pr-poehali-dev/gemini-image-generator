@@ -50,10 +50,12 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     body_data = json.loads(event.get('body', '{}'))
+    image_base64 = body_data.get('imageBase64')
     custom_prompt = body_data.get('prompt', 
-        'A vintage-style greeting card with warm, nostalgic colors and soft glow effect')
+        'Transform this into a vintage-style greeting card with warm, nostalgic colors, soft glow effect, and decorative retro flourishes like a 1960s handmade postcard')
     
     print(f"Using prompt: {custom_prompt[:50]}...")
+    print(f"Image provided: {bool(image_base64)}")
     
     headers = {
         'Authorization': f'Bearer {api_key}',
@@ -66,6 +68,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'type': 'TEXTTOIAMGE',
         'image_size': '1:1'
     }
+    
+    if image_base64:
+        payload['imageUrls'] = [image_base64]
+        print("Added image to payload as imageUrls")
     
     print(f"Sending request to NanoBanana API...")
     

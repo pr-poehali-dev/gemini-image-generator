@@ -55,6 +55,15 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     message = body_data['message']
+    
+    if message.get('from', {}).get('is_bot', False):
+        return {
+            'statusCode': 200,
+            'headers': {'Content-Type': 'application/json'},
+            'isBase64Encoded': False,
+            'body': json.dumps({'ok': True})
+        }
+    
     chat_id = message['chat']['id']
     telegram_id = message['from']['id']
     username = message['from'].get('username')

@@ -159,8 +159,8 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] py-8 px-4">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center py-8 px-4">
+      <div className="max-w-4xl w-full">
         <h1 className="text-5xl md:text-6xl font-bubblegum text-center mb-8 text-[#FF1493] drop-shadow-lg animate-fade-in">
           Бабушкин Генератор Открыток
         </h1>

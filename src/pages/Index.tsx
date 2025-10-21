@@ -193,21 +193,21 @@ const Index = () => {
 
   return (
     <>
-      <div className="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#E6A700] via-[#FFB800] to-[#E6A700] py-2.5 px-4 text-center relative overflow-hidden z-50">
+      <a 
+        href="https://poehali.dev" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#E6A700] via-[#FFB800] to-[#E6A700] py-2.5 px-4 text-center relative overflow-hidden z-50 cursor-pointer hover:opacity-95 transition-opacity block"
+      >
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
         <p className="text-sm font-medium text-black relative z-10">
           <Icon name="Rocket" size={16} className="inline-block mr-1" /> Генератор создан за 30 минут на{' '}
-          <a 
-            href="https://poehali.dev" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="underline hover:opacity-80 transition-opacity inline-flex items-center gap-1"
-          >
+          <span className="underline inline-flex items-center gap-1">
             poehali.dev
             <Icon name="ExternalLink" size={14} />
-          </a>
+          </span>
         </p>
-      </div>
+      </a>
       <div className="fixed inset-0 top-[44px] bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center overflow-hidden">
         <div className="max-w-2xl w-full px-4">
         <h1 className="text-4xl md:text-5xl font-handwritten font-bold text-center mb-4 text-[#FF1493] drop-shadow-lg animate-fade-in">

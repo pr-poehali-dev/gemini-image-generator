@@ -133,39 +133,50 @@ const Index = () => {
 
     setIsGenerating(true);
     
-    try {
-      const response = await fetch(BACKEND_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          imageBase64: selectedImage,
-          customText: customText.trim() || undefined,
-        }),
-      });
+    const maxRetries = 3;
+    let lastError: Error | null = null;
 
-      const data = await response.json();
-      
-      if (data.success && data.imageUrl) {
-        setGeneratedImage(data.imageUrl);
-        updateGenerationCount();
-        toast({
-          title: 'Готово!',
-          description: 'Открытка сгенерирована через NanoBanana AI',
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetch(BACKEND_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            imageBase64: selectedImage,
+            customText: customText.trim() || undefined,
+          }),
         });
-      } else {
-        throw new Error(data.error || 'Generation failed');
+
+        const data = await response.json();
+        
+        if (data.success && data.imageUrl) {
+          setGeneratedImage(data.imageUrl);
+          updateGenerationCount();
+          toast({
+            title: 'Готово!',
+            description: 'Открытка сгенерирована через NanoBanana AI',
+          });
+          setIsGenerating(false);
+          return;
+        } else {
+          throw new Error(data.error || 'Generation failed');
+        }
+      } catch (error) {
+        lastError = error as Error;
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
       }
-    } catch (error) {
-      toast({
-        title: 'Ошибка',
-        description: 'Не удалось сгенерировать открытку. Проверьте API ключ.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsGenerating(false);
     }
+
+    toast({
+      title: 'Ошибка',
+      description: `Не удалось сгенерировать открытку после ${maxRetries} попыток. Проверьте API ключ.`,
+      variant: 'destructive',
+    });
+    setIsGenerating(false);
   };
 
   const handleDownload = async () => {

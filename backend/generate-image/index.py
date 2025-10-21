@@ -84,6 +84,37 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     result = response.json()
     
+    if result.get('code') != 200:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'API error',
+                'message': result.get('msg', 'Unknown error'),
+                'details': result
+            })
+        }
+    
+    data = result.get('data', {})
+    response_data = data.get('response', {})
+    image_url = response_data.get('resultImageUrl')
+    
+    if not image_url:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({
+                'error': 'No image URL in response',
+                'details': result
+            })
+        }
+    
     return {
         'statusCode': 200,
         'headers': {
@@ -93,7 +124,8 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'isBase64Encoded': False,
         'body': json.dumps({
             'success': True,
-            'result': result,
+            'imageUrl': image_url,
+            'taskId': data.get('taskId'),
             'requestId': context.request_id
         })
     }

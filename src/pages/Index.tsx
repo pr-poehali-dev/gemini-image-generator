@@ -298,23 +298,35 @@ const Index = () => {
               </p>
             </div>
             
-            <Button
-              onClick={handleGenerate}
-              disabled={!selectedImage || isGenerating || generationsLeft <= 0}
-              className="w-full bg-gradient-to-r from-[#FF69B4] to-[#FF1493] hover:from-[#FF1493] hover:to-[#FF69B4] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
-            >
-              {isGenerating ? (
-                <>
-                  <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
-                  Генерируем открытку...
-                </>
-              ) : (
-                <>
-                  <Icon name="Sparkles" className="mr-2 h-5 w-5" />
-                  Создать открытку
-                </>
-              )}
-            </Button>
+            {generationsLeft > 0 ? (
+              <Button
+                onClick={handleGenerate}
+                disabled={!selectedImage || isGenerating}
+                className="w-full bg-gradient-to-r from-[#FF69B4] to-[#FF1493] hover:from-[#FF1493] hover:to-[#FF69B4] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+              >
+                {isGenerating ? (
+                  <>
+                    <Icon name="Loader2" className="mr-2 h-5 w-5 animate-spin" />
+                    Генерируем открытку...
+                  </>
+                ) : (
+                  <>
+                    <Icon name="Sparkles" className="mr-2 h-5 w-5" />
+                    Создать открытку
+                  </>
+                )}
+              </Button>
+            ) : (
+              <a
+                href="https://t.me/grandmaPicBot"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-[#0088cc] hover:bg-[#006699] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center"
+              >
+                <Icon name="MessageCircle" className="mr-2 h-5 w-5" />
+                Продолжить в Telegram боте
+              </a>
+            )}
           </div>
 
           {generatedImage && (

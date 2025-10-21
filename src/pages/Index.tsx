@@ -194,7 +194,7 @@ const Index = () => {
           </a>
         </p>
       </div>
-      <div className="h-screen bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center pt-[52px] overflow-hidden">
+      <div className="fixed inset-0 top-[44px] bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center overflow-hidden">
         <div className="max-w-2xl w-full px-4">
         <h1 className="text-4xl md:text-5xl font-handwritten font-bold text-center mb-4 text-[#FF1493] drop-shadow-lg animate-fade-in">
           Бабушкин Генератор Открыток

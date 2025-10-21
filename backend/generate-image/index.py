@@ -6,6 +6,7 @@ Returns: HTTP response with generated image URL
 
 import json
 import os
+import time
 import requests
 from typing import Dict, Any
 
@@ -109,10 +110,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         }
     
     data = result.get('data', {})
-    response_data = data.get('response', {})
-    image_url = response_data.get('resultImageUrl')
+    task_id = data.get('taskId')
     
-    if not image_url:
+    if not task_id:
         return {
             'statusCode': 500,
             'headers': {
@@ -120,22 +120,87 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                 'Access-Control-Allow-Origin': '*'
             },
             'body': json.dumps({
-                'error': 'No image URL in response',
+                'error': 'No task ID in response',
                 'details': result
             })
         }
     
+    print(f"Got task ID: {task_id}, polling for result...")
+    
+    max_attempts = 30
+    poll_interval = 2
+    
+    for attempt in range(max_attempts):
+        time.sleep(poll_interval)
+        
+        print(f"Polling attempt {attempt + 1}/{max_attempts}")
+        
+        status_response = requests.get(
+            f'https://api.nanobananaapi.ai/api/v1/nanobanana/record-info?taskId={task_id}',
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10
+        )
+        
+        if status_response.status_code != 200:
+            print(f"Status check failed: {status_response.status_code}")
+            continue
+        
+        status_result = status_response.json()
+        print(f"Status result: {json.dumps(status_result)[:500]}")
+        
+        if status_result.get('code') != 200:
+            continue
+        
+        status_data = status_result.get('data', {})
+        success_flag = status_data.get('successFlag')
+        
+        if success_flag == 1:
+            response_data = status_data.get('response', {})
+            image_url = response_data.get('resultImageUrl')
+            
+            if image_url:
+                print(f"Generation successful! Image URL: {image_url}")
+                return {
+                    'statusCode': 200,
+                    'headers': {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    },
+                    'isBase64Encoded': False,
+                    'body': json.dumps({
+                        'success': True,
+                        'imageUrl': image_url,
+                        'taskId': task_id,
+                        'requestId': context.request_id
+                    })
+                }
+        
+        error_code = status_data.get('errorCode')
+        if error_code and error_code != 0:
+            error_message = status_data.get('errorMessage', 'Unknown error')
+            print(f"Generation failed with error: {error_message}")
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*'
+                },
+                'body': json.dumps({
+                    'error': 'Generation failed',
+                    'message': error_message,
+                    'errorCode': error_code
+                })
+            }
+    
     return {
-        'statusCode': 200,
+        'statusCode': 408,
         'headers': {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*'
         },
-        'isBase64Encoded': False,
         'body': json.dumps({
-            'success': True,
-            'imageUrl': image_url,
-            'taskId': data.get('taskId'),
-            'requestId': context.request_id
+            'error': 'Generation timeout',
+            'message': 'Image generation took too long',
+            'taskId': task_id
         })
     }

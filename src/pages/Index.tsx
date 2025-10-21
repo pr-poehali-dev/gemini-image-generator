@@ -179,10 +179,10 @@ const Index = () => {
 
   return (
     <>
-      <div className="bg-gradient-to-r from-[#FFB800] via-[#FFC850] to-[#FFB800] py-2.5 px-4 text-center relative overflow-hidden">
+      <div className="fixed top-0 left-0 right-0 bg-gradient-to-r from-[#E6A700] via-[#FFB800] to-[#E6A700] py-2.5 px-4 text-center relative overflow-hidden z-50">
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
         <p className="text-sm font-medium text-black relative z-10">
-          🚀 Создано за 2 часа на{' '}
+          <Icon name="Rocket" size={16} className="inline-block mr-1" /> Создано за 2 часа на{' '}
           <a 
             href="https://poehali.dev" 
             target="_blank" 
@@ -194,18 +194,18 @@ const Index = () => {
           </a>
         </p>
       </div>
-      <div className="min-h-[calc(100vh-36px)] bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center py-8 px-4">
-        <div className="max-w-3xl w-full">
-        <h1 className="text-5xl md:text-6xl font-handwritten font-bold text-center mb-6 text-[#FF1493] drop-shadow-lg animate-fade-in">
+      <div className="h-screen bg-gradient-to-br from-[#FF69B4] via-[#FFB6D9] to-[#FFFSFF] flex items-center justify-center pt-[52px] overflow-hidden">
+        <div className="max-w-2xl w-full px-4">
+        <h1 className="text-4xl md:text-5xl font-handwritten font-bold text-center mb-4 text-[#FF1493] drop-shadow-lg animate-fade-in">
           Бабушкин Генератор Открыток
         </h1>
 
-        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 shadow-2xl animate-scale-in">
+        <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-5 shadow-2xl animate-scale-in">
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onClick={() => fileInputRef.current?.click()}
-            className="border-4 border-dashed border-[#FFB6D9] rounded-2xl mb-6 cursor-pointer hover:border-[#FF69B4] hover:bg-[#FFFSFF]/50 transition-all duration-300 h-[400px] flex flex-col items-center justify-center p-6"
+            className="border-4 border-dashed border-[#FFB6D9] rounded-2xl mb-4 cursor-pointer hover:border-[#FF69B4] hover:bg-[#FFFSFF]/50 transition-all duration-300 h-[300px] flex flex-col items-center justify-center p-4"
           >
             <input
               ref={fileInputRef}
@@ -252,23 +252,23 @@ const Index = () => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-[#FF1493] mb-2">
+              <label className="block text-xs font-medium text-[#FF1493] mb-1">
                 Пожелание (необязательно)
               </label>
               <Textarea
                 value={customText}
                 onChange={(e) => setCustomText(e.target.value)}
                 placeholder="Например: С Днём Рождения! Счастья, здоровья, всех благ!"
-                className="resize-none border-[#FFB6D9] focus:border-[#FF69B4] min-h-[80px]"
+                className="resize-none border-[#FFB6D9] focus:border-[#FF69B4] min-h-[60px] text-sm"
                 maxLength={200}
               />
-              <p className="text-xs text-gray-500 mt-1">
-                {customText.length} / 200 символов
+              <p className="text-xs text-gray-500 mt-0.5">
+                {customText.length} / 200
               </p>
             </div>
 
             <div className="text-center">
-              <p className="text-lg font-bold text-[#FF1493]">
+              <p className="text-sm font-bold text-[#FF1493]">
                 Осталось генераций сегодня: {generationsLeft} / 3
               </p>
             </div>
@@ -276,7 +276,7 @@ const Index = () => {
             <Button
               onClick={handleGenerate}
               disabled={!selectedImage || isGenerating || generationsLeft <= 0}
-              className="w-full bg-gradient-to-r from-[#FF69B4] to-[#FF1493] hover:from-[#FF1493] hover:to-[#FF69B4] text-white font-bold text-lg py-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-[#FF69B4] to-[#FF1493] hover:from-[#FF1493] hover:to-[#FF69B4] text-white font-bold text-base py-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
             >
               {isGenerating ? (
                 <>
@@ -293,10 +293,10 @@ const Index = () => {
           </div>
 
           {generatedImage && (
-            <div className="mt-8 animate-fade-in">
+            <div className="mt-4 animate-fade-in">
               <Button
                 onClick={handleDownload}
-                className="w-full bg-[#FFB6D9] hover:bg-[#FF69B4] text-[#FF1493] font-bold text-lg py-4 rounded-xl"
+                className="w-full bg-[#FFB6D9] hover:bg-[#FF69B4] text-[#FF1493] font-bold text-base py-3 rounded-xl"
               >
                 <Icon name="Download" className="mr-2 h-5 w-5" />
                 Скачать открытку
@@ -305,11 +305,6 @@ const Index = () => {
           )}
         </div>
 
-        <div className="mt-8 text-center text-white/80">
-          <p className="text-sm">
-            Создавайте уникальные открытки с помощью искусственного интеллекта ✨
-          </p>
-        </div>
         </div>
       </div>
     </>

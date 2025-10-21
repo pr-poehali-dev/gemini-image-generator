@@ -197,6 +197,10 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     else:
                         send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
         
+    except Exception as e:
+        print(f"Error in handler: {str(e)}")
+        import traceback
+        traceback.print_exc()
     finally:
         cur.close()
         conn.close()

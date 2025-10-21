@@ -49,6 +49,17 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
             'body': json.dumps({'error': 'API key not configured'})
         }
     
+    imgbb_key = os.environ.get('IMGBB_API_KEY')
+    if not imgbb_key:
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            'body': json.dumps({'error': 'ImgBB API key not configured'})
+        }
+    
     body_data = json.loads(event.get('body', '{}'))
     image_base64 = body_data.get('imageBase64')
     custom_prompt = body_data.get('prompt', 
@@ -56,6 +67,29 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     
     print(f"Using prompt: {custom_prompt[:50]}...")
     print(f"Image provided: {bool(image_base64)}")
+    
+    image_url = None
+    
+    if image_base64:
+        print("Uploading image to ImgBB...")
+        
+        image_data = image_base64.split(',')[1] if ',' in image_base64 else image_base64
+        
+        imgbb_response = requests.post(
+            f'https://api.imgbb.com/1/upload?key={imgbb_key}',
+            data={'image': image_data},
+            timeout=30
+        )
+        
+        if imgbb_response.status_code == 200:
+            imgbb_result = imgbb_response.json()
+            if imgbb_result.get('success'):
+                image_url = imgbb_result['data']['url']
+                print(f"Image uploaded successfully: {image_url}")
+            else:
+                print(f"ImgBB upload failed: {imgbb_result}")
+        else:
+            print(f"ImgBB upload error: {imgbb_response.status_code} - {imgbb_response.text}")
     
     headers = {
         'Authorization': f'Bearer {api_key}',
@@ -69,9 +103,9 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
         'image_size': '1:1'
     }
     
-    if image_base64:
-        payload['imageUrls'] = [image_base64]
-        print("Added image to payload as imageUrls")
+    if image_url:
+        payload['imageUrls'] = [image_url]
+        print(f"Added image URL to payload: {image_url}")
     
     print(f"Sending request to NanoBanana API...")
     

@@ -20,6 +20,7 @@ export default {
 		extend: {
 			fontFamily: {
 				bubblegum: ['Bubblegum Sans', 'cursive'],
+				handwritten: ['Caveat', 'cursive'],
 				sans: ['Inter', 'sans-serif']
 			},
 			colors: {

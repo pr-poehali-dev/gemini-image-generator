@@ -92,8 +92,14 @@ Keep the main subject but enhance it with artistic flourishes and decorative ele
   ];
 
   try {
+    console.log("Starting generation with proxy:", proxyUrl ? "enabled" : "disabled");
+    console.log("Image size:", imageBase64.length);
+    
     const result = await model.generateContent([customPrompt, ...imageParts]);
     const response = result.response;
+    
+    console.log("Response received:", JSON.stringify(response));
+    
     const generatedText = response.text();
 
     return {
@@ -110,6 +116,10 @@ Keep the main subject but enhance it with artistic flourishes and decorative ele
       }),
     };
   } catch (error) {
+    console.error("Error details:", error);
+    console.error("Error message:", error.message);
+    console.error("Error stack:", error.stack);
+    
     return {
       statusCode: 500,
       headers: {
@@ -120,6 +130,7 @@ Keep the main subject but enhance it with artistic flourishes and decorative ele
       body: JSON.stringify({
         success: false,
         error: error.message || "Generation failed",
+        details: error.toString(),
         requestId: context.requestId,
       }),
     };

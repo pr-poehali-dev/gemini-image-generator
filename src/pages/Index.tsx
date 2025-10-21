@@ -168,12 +168,26 @@ const Index = () => {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (generatedImage) {
-      const link = document.createElement('a');
-      link.href = generatedImage;
-      link.download = 'babushkin-generator.png';
-      link.click();
+      try {
+        const response = await fetch(generatedImage);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'babushkin-generator.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        toast({
+          title: 'Ошибка',
+          description: 'Не удалось скачать изображение',
+          variant: 'destructive',
+        });
+      }
     }
   };
 

@@ -12,7 +12,11 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     Args: event - dict with httpMethod, body; context - object with request_id
     Returns: HTTP response with statusCode, headers, body
     '''
+    print(f"=== HANDLER START ===")
+    print(f"Event: {json.dumps(event, ensure_ascii=False)[:500]}")
+    
     method: str = event.get('httpMethod', 'POST')
+    print(f"Method: {method}")
     
     if method == 'OPTIONS':
         return {

@@ -170,7 +170,7 @@ const Index = () => {
             onDrop={handleDrop}
             onDragOver={handleDragOver}
             onClick={() => fileInputRef.current?.click()}
-            className="border-4 border-dashed border-[#FFB6D9] rounded-2xl p-12 mb-6 cursor-pointer hover:border-[#FF69B4] hover:bg-[#FFFSFF]/50 transition-all duration-300 min-h-[300px] flex flex-col items-center justify-center"
+            className="border-4 border-dashed border-[#FFB6D9] rounded-2xl mb-6 cursor-pointer hover:border-[#FF69B4] hover:bg-[#FFFSFF]/50 transition-all duration-300 aspect-square flex flex-col items-center justify-center p-8"
           >
             <input
               ref={fileInputRef}
@@ -181,22 +181,22 @@ const Index = () => {
             />
             
             {generatedImage ? (
-              <div className="w-full animate-fade-in">
+              <div className="w-full h-full flex flex-col items-center justify-center animate-fade-in">
                 <img
                   src={generatedImage}
                   alt="Сгенерированная открытка"
-                  className="max-w-full max-h-[400px] mx-auto rounded-xl shadow-lg"
+                  className="max-w-full max-h-[90%] object-contain rounded-xl shadow-lg"
                 />
                 <p className="text-center mt-4 text-[#FF1493] font-medium">
                   Нажмите для загрузки нового фото
                 </p>
               </div>
             ) : selectedImage ? (
-              <div className="w-full animate-fade-in">
+              <div className="w-full h-full flex flex-col items-center justify-center animate-fade-in">
                 <img
                   src={selectedImage}
                   alt="Загруженное фото"
-                  className="max-w-full max-h-[400px] mx-auto rounded-xl shadow-lg"
+                  className="max-w-full max-h-[90%] object-contain rounded-xl shadow-lg"
                 />
                 <p className="text-center mt-4 text-[#FF1493] font-medium">
                   Нажмите для смены фото

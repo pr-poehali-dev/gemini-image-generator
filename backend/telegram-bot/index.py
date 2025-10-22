@@ -169,79 +169,81 @@ def handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
                     image_response = requests.get(file_url, timeout=30)
                     image_base64 = base64.b64encode(image_response.content).decode('utf-8')
                     
-                    generation_done = {'value': False, 'data': None, 'error': None}
+                    payload = {'imageBase64': f"data:image/jpeg;base64,{image_base64}"}
+                    if custom_text:
+                        payload['customText'] = custom_text
                     
-                    def generate():
+                    max_retries = 3
+                    retry_timeout = 45
+                    success = False
+                    result_url = None
+                    
+                    for attempt in range(1, max_retries + 1):
                         try:
-                            payload = {'imageBase64': f"data:image/jpeg;base64,{image_base64}"}
-                            if custom_text:
-                                payload['customText'] = custom_text
+                            msg_index = 0
+                            start_time = time.time()
                             
-                            resp = requests.post(
-                                'https://functions.poehali.dev/937cd074-b42c-4c14-86bc-4a8b85463284',
-                                json=payload,
-                                headers={'Content-Type': 'application/json'},
-                                timeout=60
-                            )
-                            generation_done['data'] = resp.json()
-                            generation_done['value'] = True
-                        except Exception as e:
-                            generation_done['error'] = str(e)
-                            generation_done['value'] = True
-                    
-                    gen_thread = threading.Thread(target=generate)
-                    gen_thread.start()
-                    
-                    start_time = time.time()
-                    msg_index = 0
-                    max_duration = 60
-                    
-                    while time.time() - start_time < max_duration:
-                        if generation_done['value']:
-                            break
+                            generation_done = {'value': False, 'data': None}
+                            
+                            def generate():
+                                try:
+                                    resp = requests.post(
+                                        'https://functions.poehali.dev/937cd074-b42c-4c14-86bc-4a8b85463284',
+                                        json=payload,
+                                        headers={'Content-Type': 'application/json'},
+                                        timeout=retry_timeout
+                                    )
+                                    generation_done['data'] = resp.json()
+                                except:
+                                    generation_done['data'] = None
+                                finally:
+                                    generation_done['value'] = True
+                            
+                            gen_thread = threading.Thread(target=generate)
+                            gen_thread.start()
+                            
+                            while time.time() - start_time < retry_timeout:
+                                if generation_done['value']:
+                                    break
+                                
+                                elapsed = time.time() - start_time
+                                if elapsed > (msg_index + 1) * 5 and msg_index < len(funny_messages) - 1:
+                                    msg_index += 1
+                                    if message_id:
+                                        edit_message(bot_token, chat_id, message_id, funny_messages[msg_index])
+                                
+                                time.sleep(1)
+                            
+                            gen_thread.join(timeout=1)
+                            
+                            if generation_done.get('data'):
+                                gen_data = generation_done['data']
+                                if gen_data.get('success') and gen_data.get('imageUrl'):
+                                    success = True
+                                    result_url = gen_data['imageUrl']
+                                    break
                         
-                        elapsed = time.time() - start_time
-                        if elapsed > (msg_index + 1) * 3 and msg_index < len(funny_messages) - 1:
-                            msg_index += 1
-                            if message_id:
-                                edit_message(bot_token, chat_id, message_id, funny_messages[msg_index])
+                        except:
+                            pass
+                    
+                    if success and result_url:
+                        cur.execute(
+                            "UPDATE users SET generation_count = generation_count + 1, last_generation_date = %s, updated_at = %s WHERE id = %s",
+                            (today, datetime.now(), user_id)
+                        )
+                        conn.commit()
                         
-                        time.sleep(0.5)
-                    
-                    gen_thread.join(timeout=1)
-                    
-                    if generation_done.get('error'):
-                        error_msg = "❌ Не удалось создать открытку. Попробуйте еще раз!"
+                        if message_id:
+                            delete_message(bot_token, chat_id, message_id)
+                        
+                        send_photo(bot_token, chat_id, result_url, 
+                            f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
+                    else:
+                        error_msg = "❌ Не удалось создать открытку после нескольких попыток. Попробуйте позже!"
                         if message_id:
                             edit_message(bot_token, chat_id, message_id, error_msg)
                         else:
                             send_message(bot_token, chat_id, error_msg)
-                    elif generation_done.get('data'):
-                        gen_data = generation_done['data']
-                        if gen_data.get('success') and gen_data.get('imageUrl'):
-                            cur.execute(
-                                "UPDATE users SET generation_count = generation_count + 1, last_generation_date = %s, updated_at = %s WHERE id = %s",
-                                (today, datetime.now(), user_id)
-                            )
-                            conn.commit()
-                            
-                            if message_id:
-                                delete_message(bot_token, chat_id, message_id)
-                            
-                            send_photo(bot_token, chat_id, gen_data['imageUrl'], 
-                                f"✅ Готово!\n📊 Использовано: {generation_count + 1}/3")
-                        else:
-                            error_msg = "❌ Не удалось создать открытку. Попробуйте еще раз!"
-                            if message_id:
-                                edit_message(bot_token, chat_id, message_id, error_msg)
-                            else:
-                                send_message(bot_token, chat_id, error_msg)
-                    else:
-                        timeout_msg = "⏱ Генерация заняла слишком много времени. Попробуйте еще раз!"
-                        if message_id:
-                            edit_message(bot_token, chat_id, message_id, timeout_msg)
-                        else:
-                            send_message(bot_token, chat_id, timeout_msg)
                 else:
                     send_message(bot_token, chat_id, "❌ Не удалось получить фото. Попробуйте еще раз!")
     
